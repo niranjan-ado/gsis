@@ -7,11 +7,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- CONFIGURATION ---
     const carouselImages = [
-        { src: 'https://placehold.co/1920x1080/1d1d1f/f5f5f7?text=Office+Space', alt: 'GSIS Main Office' },
-        { src: 'https://placehold.co/1920x1080/6e6e73/f5f5f7?text=Library', alt: 'Library Reading Area' },
-        { src: 'https://placehold.co/1920x1080/0071e3/f5f5f7?text=Chapel+Interior', alt: 'The Chapel Interior' },
-        { src: 'https://placehold.co/1920x1080/161617/f5f5f7?text=Classroom', alt: 'Modern Classroom' },
-        { src: 'https://placehold.co/1920x1080/86868b/f5f5f7?text=Campus+Grounds', alt: 'Campus Grounds' }
+        // IMPORTANT: These paths and filenames MUST exactly match your files in assets/images/
+        // Only provide the path to your standard resolution (1x) image here.
+        // The 'alt' text is crucial for accessibility and describes the image content.
+
+        { src: 'assets/images/Chapel-Good-Shepherd-International-School-07302025_225557.jpg', alt: 'Interior of the school chapel' },
+        { src: 'assets/images/Chapel-Good-Shepherd-International-School-07302025_225646.jpg', alt: 'School library with students studying' },
+        { src: 'assets/images/Chapel-Good-Shepherd-International-School-07302025_225717.jpg', alt: 'Outdoor sports field from an aerial view' },
+        { src: 'assets/images/Chapel-Good-Shepherd-International-School-07302025_225800.jpg', alt: 'Students participating in a classroom activity' },
+        { src: 'assets/images/Chapel-Good-Shepherd-International-School-07302025_225829.jpg', alt: 'Another view of the school chapel' },
+        { src: 'assets/images/Chapel-Good-Shepherd-International-School-07302025_225854.jpg', alt: 'More students in the library' },
+        { src: 'assets/images/Chapel-Good-Shepherd-International-School-07302025_225940.jpg', alt: 'Another perspective of the sports complex' },
+        { src: 'assets/images/Chapel-Good-Shepherd-International-School-07302025_230032.jpg', alt: 'Teacher interacting with students in class' },
+        { src: 'assets/images/Chapel-Good-Shepherd-International-School-07302025_230114.jpg', alt: 'Close-up of a classroom activity' }
+        // Add more image objects here as needed, following the exact filename from your folder.
     ];
 
     // --- INITIALIZATION ---
@@ -23,7 +32,8 @@ document.addEventListener('DOMContentLoaded', () => {
         setupAdvancedCards();
         generateHeroSvg();
         setupCarousel();
-        setupLightbox();
+        setupLightbox(); // Call the lightbox setup function
+        setupMatterportIframe(); // Call the Matterport iframe setup
     }
 
     // --- CORE FUNCTIONS ---
@@ -81,10 +91,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const x = e.clientX - rect.left;
                 const y = e.clientY - rect.top;
                 const { width, height } = rect;
-                
+
                 const xRotation = 15 * ((y - height / 2) / height);
                 const yRotation = -15 * ((x - width / 2) / width);
-                
+
                 card.style.setProperty('--x-rotation', `${xRotation}deg`);
                 card.style.setProperty('--y-rotation', `${yRotation}deg`);
                 card.style.setProperty('--x-shine', `${x}px`);
@@ -97,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     }
-    
+
     function generateHeroSvg() {
         const gridGroup = document.getElementById('grid');
         const nodesGroup = document.getElementById('nodes');
@@ -125,13 +135,39 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function setupMatterportIframe() {
+        const iframe = document.querySelector('.tour-embed-container iframe');
+        if (iframe) {
+            // Set the src for the iframe dynamically, ensures it loads properly
+            iframe.src = "https://my.matterport.com/show/?m=VDYJFZUHoGb&brand=0&dh=0&title=0&tourcta=0";
+            iframe.setAttribute('allowfullscreen', '');
+            iframe.setAttribute('allow', 'xr-spatial-tracking');
+            // No title attribute needed as per user request for this demo,
+            // but in a production environment, it's good for accessibility.
+        }
+    }
+
     function setupCarousel() {
         const carouselWrapper = document.querySelector('.carousel-wrapper');
         const carouselInner = document.querySelector('.carousel-inner');
         if (!carouselInner || !carouselWrapper) return;
 
+        // Clear any existing content in the carousel-inner div
+        carouselInner.innerHTML = '';
+
         carouselImages.forEach((img) => {
-            carouselInner.innerHTML += `<div class="carousel-item"><img src="${img.src}" alt="${img.alt}"></div>`;
+            const itemDiv = document.createElement('div');
+            itemDiv.classList.add('carousel-item');
+
+            const imgElement = document.createElement('img');
+            imgElement.src = img.src; // This will use the 1x image path from the array
+            imgElement.alt = img.alt; // Set the alt text
+
+            // NO @2X LOGIC OR SRCSET HERE, ONLY USING THE 1X SRC
+            // imgElement.srcset = `${img.src} 1x, ${srcSet2x} 2x`; // This line is intentionally removed
+
+            itemDiv.appendChild(imgElement);
+            carouselInner.appendChild(itemDiv);
         });
 
         const prevBtn = document.querySelector('.carousel-control.prev');
@@ -142,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const updateCarousel = () => {
             carouselInner.style.transform = `translateX(-${currentIndex * 100}%)`;
         };
-        
+
         const nextSlide = () => {
             currentIndex = (currentIndex + 1) % carouselImages.length;
             updateCarousel();
@@ -157,13 +193,23 @@ document.addEventListener('DOMContentLoaded', () => {
             clearInterval(autoScrollInterval);
         };
 
-        nextBtn.addEventListener('click', () => { nextSlide(); });
-        prevBtn.addEventListener('click', () => { currentIndex = (currentIndex - 1 + carouselImages.length) % carouselImages.length; updateCarousel(); });
-        
+        nextBtn.addEventListener('click', () => {
+            nextSlide();
+            stopAutoScroll(); // Stop auto-scroll on manual interaction
+            startAutoScroll(); // Restart after a brief pause or interaction
+        });
+        prevBtn.addEventListener('click', () => {
+            currentIndex = (currentIndex - 1 + carouselImages.length) % carouselImages.length;
+            updateCarousel();
+            stopAutoScroll(); // Stop auto-scroll on manual interaction
+            startAutoScroll(); // Restart after a brief pause or interaction
+        });
+
+
         carouselWrapper.addEventListener('mouseenter', stopAutoScroll);
         carouselWrapper.addEventListener('mouseleave', startAutoScroll);
 
-        startAutoScroll();
+        startAutoScroll(); // Start auto-scroll when the page loads
     }
 
     function setupLightbox() {
@@ -172,22 +218,39 @@ document.addEventListener('DOMContentLoaded', () => {
         const carouselInner = document.querySelector('.carousel-inner');
         const closeBtn = document.querySelector('.lightbox-close');
 
-        if (!lightbox || !lightboxImg || !carouselInner || !closeBtn) return;
+        if (!lightbox || !lightboxImg || !carouselInner || !closeBtn) {
+            console.warn("Lightbox elements not found. Lightbox functionality will not work.");
+            return;
+        }
 
         carouselInner.addEventListener('click', (e) => {
-            if (e.target.tagName === 'IMG') {
-                lightboxImg.src = e.target.src;
+            // Check if an image inside a carousel-item was clicked
+            if (e.target.tagName === 'IMG' && e.target.closest('.carousel-item')) {
+                lightboxImg.src = e.target.src; // Set the lightbox image source to the clicked image's source
                 lightbox.classList.add('visible');
+                document.body.classList.add('lightbox-open'); // Add class to body to prevent scrolling
             }
         });
 
         const closeModal = () => {
             lightbox.classList.remove('visible');
+            document.body.classList.remove('lightbox-open'); // Remove class from body
         };
 
         closeBtn.addEventListener('click', closeModal);
+
+        // Also close if clicking outside the image (on the dark background)
         lightbox.addEventListener('click', (e) => {
-            if (e.target === lightbox) closeModal();
+            if (e.target === lightbox) { // Check if the click was directly on the lightbox background
+                closeModal();
+            }
+        });
+
+        // Close with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && lightbox.classList.contains('visible')) {
+                closeModal();
+            }
         });
     }
 
